@@ -94,6 +94,15 @@ def initialize_system():
 
     print(f"Starting application initialization - Version: {VERSION_CODE}")
 
+    # 從環境變數讀取 JSON 字串
+    firestore_json = os.getenv("FIRESTORE")
+    if not firestore_json:
+        raise ValueError("環境變數 FIRESTORE 未設定")
+    
+    # 解析 JSON
+    cred_info = json.loads(firestore_json)
+    credentials = service_account.Credentials.from_service_account_info(cred_info)
+
     # 1. 初始化 LINE & Gemini
     line_bot_api = LineBotApi(os.environ.get("LINE_BOT_CHANNEL_ACCESS_TOKEN"))
     handler = WebhookHandler(os.environ.get("LINE_BOT_CHANNEL_SECRET"))
@@ -102,10 +111,11 @@ def initialize_system():
     genai.configure(api_key=gemini_api_key)
     generation_model = genai.GenerativeModel("gemini-2.0-flash")
 
-    # 2. 初始化 Google Sheets & Firestore
-    gc = pygsheets.authorize(service_account_file='service_account_key.json')
+    # 2. 初始化 Google Sheets & Firestore(改用 credentials 物件，不讀取檔案)
+    gc = pygsheets.authorize(custom_credentials=credentials)
     sheet = gc.open_by_url(os.environ.get("GOOGLESHEET_URL"))
-    db = get_firestore_client_from_env()
+    
+    db = firestore.Client(credentials=credentials, project=cred_info["project_id"])
 
     # 3. 載入資料與訓練 ML 模型
     questions_in_sheet, answers_in_sheet, cpc_list = load_sheet_data()
