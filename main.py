@@ -28,94 +28,98 @@ import pytz
 # CONFIGURATION AND INITIALIZATION
 ###############################################################################
 
-# 設定版本代碼和時區
 VERSION_CODE = "09.06.2025"
 GMT_8 = pytz.timezone("Asia/Taipei")
 
-print(f"Starting application - Version Code: {VERSION_CODE}")
-
 app = Flask(__name__)
 
-# Initialize Gemini API
-gemini_api_key = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=gemini_api_key)
-generation_model = genai.GenerativeModel("gemini-2.0-flash")
-
-# LINE Bot setup
-line_bot_api = LineBotApi(os.environ.get("LINE_BOT_CHANNEL_ACCESS_TOKEN"))
-handler = WebhookHandler(os.environ.get("LINE_BOT_CHANNEL_SECRET"))
+# --- 宣告全域變數 ---
+gc = None
+sheet = None
+questions_in_sheet = []
+answers_in_sheet = []
+cpc_list = []
+synonym_dict = {}
+bm25 = None
+question_embeddings = None
+generation_model = None
+line_bot_api = None
+handler = None
+db = None
 ALLOWED_DESTINATION = os.environ.get("ALLOWED_DESTINATION")
 
-# Google Sheets setup
-gc = pygsheets.authorize(service_account_file='service_account_key.json')
-sheet = gc.open_by_url(os.environ.get("GOOGLESHEET_URL"))
-
-
-# Firestore setup
 def get_firestore_client_from_env():
     firestore_json = os.getenv("FIRESTORE")
     if not firestore_json:
         raise ValueError("FIRESTORE environment variable is not set.")
-    
     cred_info = json.loads(firestore_json)
     credentials = service_account.Credentials.from_service_account_info(cred_info)
     return firestore.Client(credentials=credentials, project=cred_info["project_id"])
-    
 
-db = get_firestore_client_from_env()
+def get_model():
+    from sentence_transformers import SentenceTransformer
+    return SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 
-###############################################################################
-# DATA LOADING AND PREPROCESSING
-###############################################################################
-
-# Load questions and answers from Google Sheets 主要QA
 def load_sheet_data():
+    global sheet # 關鍵：宣告使用全域的 sheet
     # Main questions
     main_ws = sheet.worksheet("title", "表單回應")
     main_questions = main_ws.get_col(3, include_tailing_empty=False)
     main_answers = main_ws.get_col(4, include_tailing_empty=False)
     
-    # 取得 "CPC問題" 和 "CPC點數" 的值
+    # CPC點數
     cpc_ws = sheet.worksheet("title", "中油點數")
     cpc_questions = cpc_ws.get_col(8, include_tailing_empty=False)
     cpc_answers = cpc_ws.get_col(9, include_tailing_empty=False)
-    cpc_list = cpc_ws.get_col(1, include_tailing_empty=False)
+    cpc_l = cpc_ws.get_col(1, include_tailing_empty=False)
     
-    return main_questions + cpc_questions, main_answers + cpc_answers, cpc_list
+    return main_questions + cpc_questions, main_answers + cpc_answers, cpc_l
 
-questions_in_sheet, answers_in_sheet, cpc_list = load_sheet_data()
-
-# Load synonyms dictionary
 def load_synonyms():
+    global sheet
     syn_ws = sheet.worksheet("title", "同義詞")
     synonym_rows = syn_ws.get_all_values()
-    
-    synonym_dict = {}
+    s_dict = {}
     for row in synonym_rows:
         synonyms = [word.strip() for word in row if word.strip()]
         for word in synonyms:
-            synonym_dict[word] = set(synonyms) - {word}
+            s_dict[word] = set(synonyms) - {word}
+    return s_dict
+
+def initialize_system():
+    """系統初始化：按順序建立連線與載入資料"""
+    global gc, sheet, questions_in_sheet, answers_in_sheet, cpc_list
+    global synonym_dict, bm25, question_embeddings, generation_model
+    global line_bot_api, handler, db
+
+    print(f"Starting application initialization - Version: {VERSION_CODE}")
+
+    # 1. 初始化 LINE & Gemini
+    line_bot_api = LineBotApi(os.environ.get("LINE_BOT_CHANNEL_ACCESS_TOKEN"))
+    handler = WebhookHandler(os.environ.get("LINE_BOT_CHANNEL_SECRET"))
     
-    return synonym_dict
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    genai.configure(api_key=gemini_api_key)
+    generation_model = genai.GenerativeModel("gemini-2.0-flash")
 
-synonym_dict = load_synonyms()
+    # 2. 初始化 Google Sheets & Firestore
+    gc = pygsheets.authorize(service_account_file='service_account_key.json')
+    sheet = gc.open_by_url(os.environ.get("GOOGLESHEET_URL"))
+    db = get_firestore_client_from_env()
 
-# Initialize ML models
-# 先對問句進行分詞
-tokenized_questions = [list(jieba.cut(q)) for q in questions_in_sheet]
-# 建立 BM25 模型
-bm25 = BM25Okapi(tokenized_questions)
+    # 3. 載入資料與訓練 ML 模型
+    questions_in_sheet, answers_in_sheet, cpc_list = load_sheet_data()
+    synonym_dict = load_synonyms()
 
-# 載入中文句向量模型
-_model = None
-def get_model():
-    global _model
-    if _model is None:
-        from sentence_transformers import SentenceTransformer
-        _model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-    return _model
+    tokenized_questions = [list(jieba.cut(q)) for q in questions_in_sheet]
+    bm25 = BM25Okapi(tokenized_questions)
+    
+    print("Encoding embeddings... this may take a moment.")
+    question_embeddings = get_model().encode(questions_in_sheet)
+    print("System initialization complete.")
 
-question_embeddings = get_model().encode(questions_in_sheet)
+# 執行初始化 (確保在 Flask 啟動前完成)
+initialize_system()
 
 ###############################################################################
 # SEARCH AND RETRIEVAL FUNCTIONS
