@@ -406,6 +406,9 @@ def record_question_for_answer(question_for_answer):
    # gc = pygsheets.authorize(service_account_file='service_account_key.json')
    # sheet = gc.open_by_url(os.environ.get("GOOGLESHEET_URL"))
     global sheet # 修正點：直接使用全域 sheet，不要重新 authorize
+    if sheet is None:
+        print("Sheet not initialized yet. Skipping record.")
+        return
     try:
         reply_ws = sheet.worksheet("title", "回答")
         print("Found '回答' worksheet.")
