@@ -47,11 +47,8 @@ handler = WebhookHandler(os.environ.get("LINE_BOT_CHANNEL_SECRET"))
 ALLOWED_DESTINATION = os.environ.get("ALLOWED_DESTINATION")
 
 # Google Sheets setup
-def get_sheet():
-    gc = pygsheets.authorize(
-        service_account_file="service_account_key.json"
-    )
-    return gc.open_by_url(os.environ["GOOGLESHEET_URL"])
+gc = pygsheets.authorize(service_account_file='service_account_key.json')
+sheet = gc.open_by_url(os.environ.get("GOOGLESHEET_URL"))
 
 
 # Firestore setup
@@ -546,8 +543,8 @@ def build_flex_response(answer, conversation_id):
 ###############################################################################
 
 @app.route("/callback", methods=["POST"])
-def callback():
-    sheet = get_sheet()
+def callback(request):
+    
     print(f"Version Code: {VERSION_CODE}")
     
     signature = request.headers.get("X-Line-Signature")
