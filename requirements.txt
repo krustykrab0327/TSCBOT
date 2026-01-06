@@ -6,7 +6,6 @@ pygsheets
 numpy
 rank-bm25
 pytz
-sentence_transformers
 jieba
 
 #以下GCP需要
