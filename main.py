@@ -49,7 +49,7 @@ ALLOWED_DESTINATION = os.environ.get("ALLOWED_DESTINATION")
 # Google Sheets setup
 def get_sheet():
     gc = pygsheets.authorize(
-        service_account_file="/secrets/service_account_key.json"
+        service_account_file="service_account_key.json"
     )
     return gc.open_by_url(os.environ["GOOGLESHEET_URL"])
 
