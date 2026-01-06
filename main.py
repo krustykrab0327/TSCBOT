@@ -377,8 +377,9 @@ def get_oil_points_column_a():
 
 def record_question(user_id, user_input):
     """記錄用戶問題到統計紀錄"""
-    gc = pygsheets.authorize(service_account_file='service_account_key.json')
-    sheet = gc.open_by_url(os.environ.get("GOOGLESHEET_URL"))
+    # gc = pygsheets.authorize(service_account_file='service_account_key.json')
+    # sheet = gc.open_by_url(os.environ.get("GOOGLESHEET_URL"))
+    global sheet, line_bot_api # 使用全域變數
     try:
         profile = line_bot_api.get_profile(user_id)
         user_name = profile.display_name
