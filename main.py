@@ -100,8 +100,18 @@ def initialize_system():
     if not firestore_json:
         raise ValueError("環境變數 FIRESTORE 未設定")
     
-    # 解析 JSON
-    cred_info = json.loads(firestore_json)
+
+    # 這行會把壞掉的 \\n 轉回正確的 \n，並處理掉可能夾雜的空白
+    firestore_json = firestore_json.replace('\\n', '\n').strip() 
+
+    try:
+        cred_info = json.loads(firestore_json)
+        print("JSON 解析成功！")
+    except json.JSONDecodeError as e:
+        print(f"JSON 解析失敗，位置：{e}")
+        # 如果還是失敗，可以印出 firestore_json 的前 20 個字元來除錯
+        print(f"內容開頭為: {firestore_json[:20]}")
+        raise e
 
     # 1. 初始化 LINE & Gemini
     line_bot_api = LineBotApi(os.environ.get("LINE_BOT_CHANNEL_ACCESS_TOKEN"))
