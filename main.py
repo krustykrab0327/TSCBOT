@@ -101,16 +101,21 @@ def initialize_system():
         raise ValueError("環境變數 FIRESTORE 未設定")
     
 
-    # 這行會把壞掉的 \\n 轉回正確的 \n，並處理掉可能夾雜的空白
-    firestore_json = firestore_json.replace('\\n', '\n').strip() 
-
     try:
-        cred_info = json.loads(firestore_json)
-        print("JSON 解析成功！")
+        # 1. 處理 \n 被轉成實體換行的問題
+        # 2. 處理 \\n 被轉成字串的問題
+        cleaned_json = firestore_json.replace('\n', '\\n').replace('\r', '')
+        # 如果原本貼進去就有縮排或空格，這裡做最後修整
+        cred_info = json.loads(cleaned_json, strict=False) 
+        
+        print("Successfully parsed JSON credentials!")
+        
+        # ... 剩下的授權邏輯 ...
+        
     except json.JSONDecodeError as e:
-        print(f"JSON 解析失敗，位置：{e}")
-        # 如果還是失敗，可以印出 firestore_json 的前 20 個字元來除錯
-        print(f"內容開頭為: {firestore_json[:20]}")
+        print(f"JSON 解析錯誤：{e}")
+        # 這裡印出前幾位數幫助除錯，不要印出完整的 Key 以維護安全性
+        print(f"錯誤位置附近的內容: {firestore_json[max(0, e.pos-10):e.pos+10]}")
         raise e
 
     # 1. 初始化 LINE & Gemini
