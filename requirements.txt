@@ -1,23 +1,14 @@
-# 基礎 Web 框架與部署
 functions-framework==3.4.0
-Flask>=2.0.0
-gunicorn
-
-# LINE Bot SDK (建議鎖定 v3 以下版本，因為 v3 的語法變動很大)
-line-bot-sdk>=1.18.0,<3.0.0
-
-# Google 服務
+Flask
+line-bot-sdk
 google-generativeai
 pygsheets
-google-cloud-firestore
-google-auth
-google-auth-oauthlib
-
-# NLP 與 運算
 numpy
 rank-bm25
-sentence-transformers
+pytz
+sentence_transformers
 jieba
 
-# 時間與工具
-pytz
+#以下GCP需要
+google-cloud-firestore
+google-auth
