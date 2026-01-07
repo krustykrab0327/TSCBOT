@@ -140,10 +140,10 @@ def initialize_system():
     questions_in_sheet, answers_in_sheet, cpc_list = load_sheet_data()
     synonym_dict = load_synonyms()
 
-    tokenized_questions = [list(jieba.cut(q)) for q in questions_in_sheet]
-    bm25 = BM25Okapi(tokenized_questions)
+    bm25 = BM25Okapi([list(jieba.cut(q)) for q in questions_in_sheet])
     
     print("Encoding embeddings... this may take a moment.")
+    # 確保 get_model() 會下載或讀取預訓練模型
     question_embeddings = get_model().encode(questions_in_sheet)
     print("System initialization complete.")
 
