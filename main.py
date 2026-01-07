@@ -96,7 +96,7 @@ def initialize_system():
     """系統初始化：按順序建立連線與載入資料"""
     global gc, sheet, questions_in_sheet, answers_in_sheet, cpc_list
     global synonym_dict, bm25, question_embeddings, generation_model
-    global line_bot_api, handler, db
+    global line_bot_api, handler, db  # 確保包含 db
 
     print(f"Starting application initialization - Version: {VERSION_CODE}")
 
@@ -107,7 +107,6 @@ def initialize_system():
     
     # 解析 JSON
     cred_info = json.loads(firestore_json)
-    credentials = service_account.Credentials.from_service_account_info(cred_info)
 
     # 1. 初始化 LINE & Gemini
     line_bot_api = LineBotApi(os.environ.get("LINE_BOT_CHANNEL_ACCESS_TOKEN"))
@@ -117,23 +116,25 @@ def initialize_system():
     genai.configure(api_key=gemini_api_key)
     generation_model = genai.GenerativeModel("gemini-2.0-flash")
 
-    # 2. 初始化 Google Sheets & Firestore(改用 credentials 物件，不讀取檔案)
-try:
-    firestore_json = json.loads(os.environ.get("FIRESTORE"))
-    # 使用明確的 Scopes 建立憑證
-    credentials = service_account.Credentials.from_service_account_info(
-        firestore_json, 
-        scopes=SCOPES
-    )
-    # 授權時傳入這個憑證
-    gc = pygsheets.authorize(custom_credentials=credentials)
-    
-    sheet_url = os.environ.get("GOOGLESHEET_URL")
-    sheet = gc.open_by_url(sheet_url)
-    print("Successfully connected to Google Sheets!")
-except Exception as e:
-    print(f"Auth Error: {e}")
-    raise e
+    # 2. 初始化 Google Sheets & Firestore (新增 db 初始化)
+    try:
+        # 使用明確的 Scopes 建立憑證
+        credentials = service_account.Credentials.from_service_account_info(
+            cred_info, 
+            scopes=SCOPES
+        )
+        # 初始化 Google Sheets
+        gc = pygsheets.authorize(custom_credentials=credentials)
+        sheet_url = os.environ.get("GOOGLESHEET_URL")
+        sheet = gc.open_by_url(sheet_url)
+        
+        # 初始化 Firestore (關鍵：這行沒寫的話，handle_message 會報錯)
+        db = firestore.Client(credentials=credentials, project=cred_info["project_id"])
+        
+        print("Successfully connected to Google Sheets and Firestore!")
+    except Exception as e:
+        print(f"Auth Error: {e}")
+        raise e
 
     # 3. 載入資料與訓練 ML 模型
     questions_in_sheet, answers_in_sheet, cpc_list = load_sheet_data()
