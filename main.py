@@ -16,6 +16,12 @@ import google.generativeai as genai
 from google.cloud import firestore
 from google.oauth2 import service_account
 
+# 定義明確的權限範圍
+SCOPES = [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive'
+]
+
 # ML and NLP imports
 import numpy as np
 from rank_bm25 import BM25Okapi
@@ -112,10 +118,22 @@ def initialize_system():
     generation_model = genai.GenerativeModel("gemini-2.0-flash")
 
     # 2. 初始化 Google Sheets & Firestore(改用 credentials 物件，不讀取檔案)
+try:
+    firestore_json = json.loads(os.environ.get("FIRESTORE"))
+    # 使用明確的 Scopes 建立憑證
+    credentials = service_account.Credentials.from_service_account_info(
+        firestore_json, 
+        scopes=SCOPES
+    )
+    # 授權時傳入這個憑證
     gc = pygsheets.authorize(custom_credentials=credentials)
-    sheet = gc.open_by_url(os.environ.get("GOOGLESHEET_URL"))
     
-    db = firestore.Client(credentials=credentials, project=cred_info["project_id"])
+    sheet_url = os.environ.get("GOOGLESHEET_URL")
+    sheet = gc.open_by_url(sheet_url)
+    print("Successfully connected to Google Sheets!")
+except Exception as e:
+    print(f"Auth Error: {e}")
+    raise e
 
     # 3. 載入資料與訓練 ML 模型
     questions_in_sheet, answers_in_sheet, cpc_list = load_sheet_data()
