@@ -8,6 +8,7 @@ rank-bm25
 pytz
 sentence_transformers
 jieba
+aiohttp>=3.9.0
 
 #以下GCP需要
 google-cloud-firestore
