@@ -123,10 +123,6 @@ def initialize_system():
         # 讓伺服器繼續啟動，方便從 Web 介面除錯
         return
 
-    # 1. 初始化 LINE & Gemini
-    line_bot_api = LineBotApi(os.environ.get("LINE_BOT_CHANNEL_ACCESS_TOKEN"))
-    handler = WebhookHandler(os.environ.get("LINE_BOT_CHANNEL_SECRET"))
-    
     gemini_api_key = os.getenv("GEMINI_API_KEY")
     genai.configure(api_key=gemini_api_key)
     generation_model = genai.GenerativeModel("gemini-2.0-flash")
