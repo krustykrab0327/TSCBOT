@@ -16,12 +16,6 @@ import google.generativeai as genai
 from google.cloud import firestore
 from google.oauth2 import service_account
 
-# 定義明確的權限範圍
-SCOPES = [
-    'https://www.googleapis.com/auth/spreadsheets',
-    'https://www.googleapis.com/auth/drive'
-]
-
 
 # ML and NLP imports
 import numpy as np
@@ -119,11 +113,10 @@ def initialize_system():
 
     # 2. 初始化 Google Sheets & Firestore (新增 db 初始化)
     try:
-        # 使用明確的 Scopes 建立憑證
-        credentials = service_account.Credentials.from_service_account_info(
-            cred_info, 
-            scopes=SCOPES
-        )
+
+        gc = pygsheets.authorize(service_account_info=cred_info)
+        # ... 後續開啟試算表邏輯 ...
+        print("Successfully connected to Google Sheets!")
         # 初始化 Google Sheets
         gc = pygsheets.authorize(custom_credentials=credentials)
         sheet_url = os.environ.get("GOOGLESHEET_URL")
