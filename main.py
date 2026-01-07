@@ -36,9 +36,8 @@ app = Flask(__name__)
 
 # --- 宣告全域變數 ---
 # Google Sheets setup
-gc = pygsheets.authorize(service_account_file='service_account_key.json')
-sheet = gc.open_by_url(os.environ.get("GOOGLESHEET_URL"))
-
+gc = None
+sheet = None
 questions_in_sheet = []
 answers_in_sheet = []
 cpc_list = []
