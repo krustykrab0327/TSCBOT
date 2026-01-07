@@ -35,8 +35,10 @@ GMT_8 = pytz.timezone("Asia/Taipei")
 app = Flask(__name__)
 
 # --- 宣告全域變數 ---
-gc = None
-sheet = None
+# Google Sheets setup
+gc = pygsheets.authorize(service_account_file='service_account_key.json')
+sheet = gc.open_by_url(os.environ.get("GOOGLESHEET_URL"))
+
 questions_in_sheet = []
 answers_in_sheet = []
 cpc_list = []
@@ -56,6 +58,8 @@ def get_firestore_client_from_env():
     cred_info = json.loads(firestore_json)
     credentials = service_account.Credentials.from_service_account_info(cred_info)
     return firestore.Client(credentials=credentials, project=cred_info["project_id"])
+
+db = get_firestore_client_from_env()
 
 def get_model():
     from sentence_transformers import SentenceTransformer
