@@ -102,21 +102,26 @@ def initialize_system():
     
 
     try:
-        # 1. 處理 \n 被轉成實體換行的問題
-        # 2. 處理 \\n 被轉成字串的問題
-        cleaned_json = firestore_json.replace('\n', '\\n').replace('\r', '')
-        # 如果原本貼進去就有縮排或空格，這裡做最後修整
-        cred_info = json.loads(cleaned_json, strict=False) 
+        # 關鍵修正：使用 codecs.escape_decode 處理反斜線衝突
+        # 這樣不管 GCP 給你的是 \n 還是 \\n，都會被正確轉回換行符號
+        try:
+            processed_json = codecs.decode(raw_json, 'unicode_escape')
+        except:
+            processed_json = raw_json
+            
+        # 移除可能存在的外層雙引號
+        processed_json = processed_json.strip().strip('"')
         
-        print("Successfully parsed JSON credentials!")
+        # 解析 JSON
+        cred_info = json.loads(processed_json, strict=False)
+        print("憑證 JSON 解析成功！")
         
-        # ... 剩下的授權邏輯 ...
-        
-    except json.JSONDecodeError as e:
-        print(f"JSON 解析錯誤：{e}")
-        # 這裡印出前幾位數幫助除錯，不要印出完整的 Key 以維護安全性
-        print(f"錯誤位置附近的內容: {firestore_json[max(0, e.pos-10):e.pos+10]}")
-        raise e
+        # ... 後續授權邏輯 ...
+
+    except Exception as e:
+        print(f"解析失敗：{str(e)}")
+        # 讓伺服器繼續啟動，方便從 Web 介面除錯
+        return
 
     # 1. 初始化 LINE & Gemini
     line_bot_api = LineBotApi(os.environ.get("LINE_BOT_CHANNEL_ACCESS_TOKEN"))
