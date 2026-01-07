@@ -44,8 +44,8 @@ synonym_dict = {}
 bm25 = None
 question_embeddings = None
 generation_model = None
-line_bot_api = None
-handler = None
+line_bot_api = LineBotApi(os.environ.get("LINE_BOT_CHANNEL_ACCESS_TOKEN"))
+handler = WebhookHandler(os.environ.get("LINE_BOT_CHANNEL_SECRET") or "DUMMY_SECRET")
 db = None
 ALLOWED_DESTINATION = os.environ.get("ALLOWED_DESTINATION")
 
@@ -91,7 +91,7 @@ def initialize_system():
     """系統初始化：按順序建立連線與載入資料"""
     global gc, sheet, questions_in_sheet, answers_in_sheet, cpc_list
     global synonym_dict, bm25, question_embeddings, generation_model
-    global line_bot_api, handler, db  # 確保包含 db
+    global line_bot_api, db  # 確保包含 db
 
     print(f"Starting application initialization - Version: {VERSION_CODE}")
 
