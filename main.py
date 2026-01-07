@@ -89,43 +89,56 @@ def load_synonyms():
     return s_dict
 
 def initialize_system():
+    """系統初始化：按順序建立連線與載入資料"""
     global gc, sheet, questions_in_sheet, answers_in_sheet, cpc_list
     global synonym_dict, bm25, question_embeddings, generation_model
-    global line_bot_api, handler, db, model_transformer # 新增 model_transformer
+    global line_bot_api, handler, db, model_transformer # 建議把模型也變全域
 
     print(f"Starting application initialization - Version: {VERSION_CODE}")
 
-    # 1. 解析 Credentials
+    # --- 步驟 A: 處理 Credentials JSON ---
     firestore_json = os.getenv("FIRESTORE")
+    if not firestore_json:
+        raise ValueError("環境變數 FIRESTORE 未設定")
+
     try:
-        # 增加 strip() 移除前後空白
-        cred_info = json.loads(firestore_json.strip(), strict=False) 
-    except:
+        # 增加 strip() 並嘗試直接解析
+        cred_info = json.loads(firestore_json.strip(), strict=False)
+    except json.JSONDecodeError:
         cleaned_json = firestore_json.replace('\n', '\\n').replace('\r', '')
         cred_info = json.loads(cleaned_json, strict=False)
 
-    # 2. 初始化模型 (一次性載入，重要！)
-    from sentence_transformers import SentenceTransformer
-    model_transformer = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-    
-    # 3. 初始化 LINE & Gemini
+    # --- 步驟 B: 初始化基礎 API (LINE, Gemini) ---
     line_bot_api = LineBotApi(os.environ.get("LINE_BOT_CHANNEL_ACCESS_TOKEN"))
     handler = WebhookHandler(os.environ.get("LINE_BOT_CHANNEL_SECRET"))
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
     generation_model = genai.GenerativeModel("gemini-2.0-flash")
 
-    # 4. 初始化 Google Sheets & Firestore
-    gc = pygsheets.authorize(service_account_info=cred_info)
-    sheet = gc.open_by_url(os.environ.get("GOOGLESHEET_URL"))
-    
-    creds = service_account.Credentials.from_service_account_info(cred_info)
-    db = firestore.Client(credentials=creds, project=cred_info["project_id"])
+    # --- 步驟 C: 【重要】先建立 Google Sheets 與 Firestore 連線 ---
+    try:
+        # 先授權
+        gc = pygsheets.authorize(service_account_info=cred_info)
+        # 先開啟試算表，這行執行完全域變數 sheet 才有值
+        sheet_url = os.environ.get("GOOGLESHEET_URL")
+        sheet = gc.open_by_url(sheet_url)
+        
+        # 初始化 Firestore
+        creds = service_account.Credentials.from_service_account_info(cred_info)
+        db = firestore.Client(credentials=creds, project=cred_info["project_id"])
+        print("Successfully connected to Google Sheets and Firestore!")
+    except Exception as e:
+        print(f"Auth or Connection Error: {e}")
+        raise e
 
-    # 5. 載入資料
+    # --- 步驟 D: 確定 sheet 有值後，才載入資料 ---
     questions_in_sheet, answers_in_sheet, cpc_list = load_sheet_data()
     synonym_dict = load_synonyms()
+
+    # --- 步驟 E: 訓練/準備 ML 模型 ---
+    # 建議把 get_model() 放在這裡載入一次就好，不要在 retrieve_top_n 裡重複載入
+    from sentence_transformers import SentenceTransformer
+    model_transformer = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
     
-    # 6. 訓練 BM25 與產出 Embeddings
     bm25 = BM25Okapi([list(jieba.cut(q)) for q in questions_in_sheet])
     question_embeddings = model_transformer.encode(questions_in_sheet)
     
@@ -163,7 +176,7 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=10):
         # BM25 排序
         bm25_scores = bm25.get_scores(tokenized_query)
         # Sentence Transformers 相似度計算(餘弦相似度)
-        query_embedding = get_model().encode([query])[0]
+        query_embedding = model_transformer.encode([query])[0]
         semantic_scores = np.dot(question_embeddings, query_embedding)
         # 兩者加權平均（可調整權重）
         combined_scores = 0.7 * np.array(bm25_scores) + 0.3 * semantic_scores
