@@ -118,7 +118,6 @@ def initialize_system():
         # ... 後續開啟試算表邏輯 ...
         print("Successfully connected to Google Sheets!")
         # 初始化 Google Sheets
-        gc = pygsheets.authorize(custom_credentials=credentials)
         sheet_url = os.environ.get("GOOGLESHEET_URL")
         sheet = gc.open_by_url(sheet_url)
         
