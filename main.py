@@ -581,7 +581,7 @@ def build_flex_response(answer, conversation_id):
 ###############################################################################
 
 @app.route("/callback", methods=["POST"])
-def callback(request):
+def callback():
     
     print(f"Version Code: {VERSION_CODE}")
     
