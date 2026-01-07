@@ -572,6 +572,9 @@ def build_flex_response(answer, conversation_id):
 ###############################################################################
 # LINE BOT EVENT HANDLERS
 ###############################################################################
+@app.route("/", methods=['GET'])
+def index():
+    return "TSC Bot is running!"
 
 @app.route("/callback", methods=["POST"])
 def callback():
