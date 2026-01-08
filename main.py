@@ -128,8 +128,8 @@ def initialize_system():
     
     print("System initialization complete.")
 
-# 執行初始化 (確保在 Flask 啟動前完成)
-# initialize_system()
+
+ initialize_system()
 
 ###############################################################################
 # SEARCH AND RETRIEVAL FUNCTIONS
@@ -732,7 +732,6 @@ def handle_postback(event):
 # MAIN APPLICATION
 ###############################################################################
 
-threading.Thread(target=initialize_system).start()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
