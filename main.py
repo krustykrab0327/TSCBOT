@@ -710,7 +710,8 @@ def handle_message(event):
         print(f"Failed to send reply: {e}")
     
     # 非同步記錄用戶提問
-    threading.Thread(target=record_question, args=(user_id, user_input)).start()
+    #threading.Thread(target=record_question, args=(user_id, user_input)).start()
+    record_question(user_id, user_input)
 
 @handler.add(PostbackEvent)
 def handle_postback(event):
