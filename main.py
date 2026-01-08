@@ -581,27 +581,28 @@ def index():
 
 @app.route("/callback", methods=["POST"])
 def callback():
-    
-    print(f"Version Code: {VERSION_CODE}")
-    
+        
     signature = request.headers.get("X-Line-Signature")
     body = request.get_data(as_text=True)
     
     
+# 1. 立即啟動背景執行緒處理邏輯
+    # 這樣 callback 可以不到 1 秒就回覆 LINE HTTP 200，避開 10 秒逾時
     try:
-        payload = json.loads(body)
-        print(f"Destination received: {payload.get('destination')}")
+        t = threading.Thread(target=background_process, args=(body, signature))
+        t.start()
     except Exception as e:
-        print("Payload parsing error:", e)
-        return "Bad Request", 400
-    
+        print(f"啟動背景執行緒失敗: {e}")
+
+    return "OK", 200
+
+def background_process(body, signature):
+    """在背景執行的邏輯，不受 LINE 10秒限制"""
     try:
         handler.handle(body, signature)
-        print("Message handled successfully.")
-    except InvalidSignatureError as e:
-        print("InvalidSignatureError:", e)
-        abort(400)
-    return "OK"
+        print("背景訊息處理完成")
+    except Exception as e:
+        print(f"背景處理出錯: {e}")
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
@@ -704,14 +705,18 @@ def handle_message(event):
             reply = TextSendMessage(text="機器人暫時無法使用，請聯絡積慧幫忙協助")
     
     try:
-        line_bot_api.reply_message(event.reply_token, reply)
-        print("Reply sent successfully.")
-    except LineBotApiError as e:
-        print(f"Failed to send reply: {e}")
+        if reply:
+            line_bot_api.push_message(user_id, reply)
+            print(f"已主動推播訊息給使用者: {user_id}")
+    except Exception as e:
+        print(f"推播失敗: {e}")
     
-    # 非同步記錄用戶提問
-    #threading.Thread(target=record_question, args=(user_id, user_input)).start()
-    record_question(user_id, user_input)
+# --- 記錄問題 (同步執行，確保關機前寫入) ---
+    try:
+        record_question(user_id, user_input)
+    except Exception as e:
+        print(f"記錄問題失敗: {e}")
+    
 
 @handler.add(PostbackEvent)
 def handle_postback(event):
