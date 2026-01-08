@@ -50,13 +50,7 @@ db = None
 model_transformer = None
 ALLOWED_DESTINATION = os.environ.get("ALLOWED_DESTINATION")
 
-def get_firestore_client_from_env():
-    firestore_json = os.getenv("FIRESTORE")
-    if not firestore_json:
-        raise ValueError("FIRESTORE environment variable is not set.")
-    cred_info = json.loads(firestore_json)
-    credentials = service_account.Credentials.from_service_account_info(cred_info)
-    return firestore.Client(credentials=credentials, project=cred_info["project_id"])
+
 
 def get_model():
     from sentence_transformers import SentenceTransformer
@@ -92,11 +86,7 @@ def initialize_system():
     """系統初始化：按順序建立連線與載入資料"""
     global gc, sheet, questions_in_sheet, answers_in_sheet, cpc_list
     global synonym_dict, bm25, question_embeddings, generation_model
-    global line_bot_api, handler, db
-
-    print(f"Starting application initialization - Version: {VERSION_CODE}")
-
-  
+    global line_bot_api, handler, db, model_transformer
 
     # --- 步驟 B: 初始化基礎 API (LINE, Gemini) ---
     line_bot_api = LineBotApi(os.environ.get("LINE_BOT_CHANNEL_ACCESS_TOKEN"))
@@ -126,12 +116,11 @@ def initialize_system():
     synonym_dict = load_synonyms()
 
     # --- 步驟 E: 訓練/準備 ML 模型 ---
-    # 建議把 get_model() 放在這裡載入一次就好，不要在 retrieve_top_n 裡重複載入
-    #from sentence_transformers import SentenceTransformer
-    #model_transformer = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+    from sentence_transformers import SentenceTransformer
+    model_transformer = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
     
     bm25 = BM25Okapi([list(jieba.cut(q)) for q in questions_in_sheet])
-    #question_embeddings = model_transformer.encode(questions_in_sheet)
+    question_embeddings = model_transformer.encode(questions_in_sheet)
 
     # 加入這行強制載入 jieba 字典，避免第一次搜尋卡住
     jieba.lcut("初始化")
