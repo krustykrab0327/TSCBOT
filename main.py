@@ -127,11 +127,14 @@ def initialize_system():
 
     # --- 步驟 E: 訓練/準備 ML 模型 ---
     # 建議把 get_model() 放在這裡載入一次就好，不要在 retrieve_top_n 裡重複載入
-    from sentence_transformers import SentenceTransformer
-    model_transformer = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+    #from sentence_transformers import SentenceTransformer
+    #model_transformer = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
     
     bm25 = BM25Okapi([list(jieba.cut(q)) for q in questions_in_sheet])
-    question_embeddings = model_transformer.encode(questions_in_sheet)
+    #question_embeddings = model_transformer.encode(questions_in_sheet)
+
+    # 加入這行強制載入 jieba 字典，避免第一次搜尋卡住
+    jieba.lcut("初始化")
     
     print("System initialization complete.")
 
@@ -162,6 +165,15 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=10):
     4.最多選擇2個答案 
     """
     try:
+        # --- 延遲載入模型邏輯 ---
+        if model_transformer is None:
+            print("第一次使用，正在載入 Transformer 模型...")
+            from sentence_transformers import SentenceTransformer
+            model_transformer = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+            # 載入後立刻對現有問題進行編碼
+            question_embeddings = model_transformer.encode(questions_in_sheet)
+            print("模型載入與向量計算完成！")
+            
         expanded_query = expand_query(query)
         tokenized_query = list(jieba.cut(expanded_query))
         # BM25 排序
