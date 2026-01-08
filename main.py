@@ -81,6 +81,9 @@ def load_synonyms():
         for word in synonyms:
             s_dict[word] = set(synonyms) - {word}
     return s_dict
+    
+line_bot_api = LineBotApi(os.environ.get("LINE_BOT_CHANNEL_ACCESS_TOKEN"))
+handler = WebhookHandler(os.environ.get("LINE_BOT_CHANNEL_SECRET"))
 
 def initialize_system():
     """系統初始化：按順序建立連線與載入資料"""
@@ -89,8 +92,6 @@ def initialize_system():
     global line_bot_api, handler, db, model_transformer
 
     # --- 步驟 B: 初始化基礎 API (LINE, Gemini) ---
-    line_bot_api = LineBotApi(os.environ.get("LINE_BOT_CHANNEL_ACCESS_TOKEN"))
-    handler = WebhookHandler(os.environ.get("LINE_BOT_CHANNEL_SECRET"))
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
     generation_model = genai.GenerativeModel("gemini-2.0-flash")
 
