@@ -92,7 +92,7 @@ def initialize_system():
     """系統初始化：按順序建立連線與載入資料"""
     global gc, sheet, questions_in_sheet, answers_in_sheet, cpc_list
     global synonym_dict, bm25, question_embeddings, generation_model
-    global line_bot_api, handler, db, model_transformer # 建議把模型也變全域
+    global line_bot_api, handler, db
 
     print(f"Starting application initialization - Version: {VERSION_CODE}")
 
