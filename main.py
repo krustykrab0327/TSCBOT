@@ -97,23 +97,7 @@ def initialize_system():
     print(f"Starting application initialization - Version: {VERSION_CODE}")
 
     # --- 步驟 A: 處理 Credentials JSON ---
-    test_cred = {
-      "type": "service_account",
-      "project_id": "gas-pos-chatbot",
-      "private_key_id": "a861b2d9e7a666899d2f96d6457db80b09ed7c3a",
-      "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDrb/sofoBp0CD3\nE1+a0NubPbT8JfvzaytxZZ9RodmdcA/Asr28mZpyMPRMa3W8oeKWaed+BrQIhf5R\nk3IfCGBHBoXVRzz/3A3wG7bUg/hMFgc3VhlYo2pbih+u577x9GPW20dUm0QMiGz6\nwytgAq4XBLQpths6SENasEPRXjVPbA4ib/YQjp/F1zSt9j5IRo023frGKpKVmzes\nDbprdQKPkAU+K+NDJNeElja7DYh4Rfpda/8vz1AM7Rff21wQ79jEPJws8hLu7fQA\nUvN1dPTU9tjOX84U9tom3gwNIV3ocnW+uyc6JoeDQ5IgiQ84WFoGBZkNe6hdr7no\nMht2mTh5AgMBAAECggEAA0ngDiT+31t/oQvgJZNeGelEU6hRKwmCb2tODM/FWyMI\nqUul2vz3Rg85KQRwPidcY6GiO5BVkpqSiT+qvqm5NIzFW6EK26pjzHM1UXsawa9Q\nwFJfeMLm66qT04zboy64zUm9/D3N9xyEZIKg4rlZhqtIu/NrURwCICxpn21Lh9WG\n8dWUVO+nksHazuwivf7PVP8a7ouKujtWo4hEdsQBg3UJr12tQUGWfDYELi7uuze+\nSZFAMSq2BVd/BxQ/YNii3AU5UJtzIY6be+b3Q7WIC0ofX0iTCFYxk2kym7Xw+uWC\nYh9RPaf6Z4hygCBIuS8+tDLdmS1cZ+u5LQo3d7UHIQKBgQD653XwQlvZJ9EGGnCx\nlqwZhiNvNWTWzprIatOU4LFibdSItZlKLCQ2xjxD0AG28O0h+aIXZIXe6H25Wjyc\nlrjVj7fjAVN5iiJV8BAvXrfmoCY1niUXer+hoclJyV7LcScq8h6FaP1ylx5mHz7f\nIR1d+e+3AuKJZoUd0EdYpj3fsQKBgQDwOBp8a8mHskvAOMoipRj5R4DLGSJowpQm\nxG82SeqJL+kTsKv3VCad3QsAE3KpbRz/dFj4G2NltVZyVUGWpR1L9vKsZm+e3k7t\nRdoVBeZZpX4GPErwJI7S1hqyNc9iA8Da5pw0SxM0hS5GS5kjlcJqOS79+LYuhiZp\nQzk5pD4fSQKBgAgnkau3XGjYZHDAVz1OWlWSCIDKyXY5zMoKvsmt69X5H9k5nbvN\nZ3foRXkmv4eEmRBrnpsIB1nRUJS/nAyy0VsPirh0CJSAqtEENmJzv6JdPiCr/SSg\nNq44JeSiCNSv3sgEin1nhiU9SB2lklOKLfwp7WKTU22HyXfIlykIbiZhAoGAPAGX\nxCrcvdPxDkRhYgQh1+tfpdxSdx7cCU8ahNI0Dy7zpyKD4pWXy+lynQM+qkoCa2Gx\n89BLpRWGUaswZiQ6zEYU2rIAAgyAZM8FKik+IHixoXcgNRq8vrgTFR9R/ab4XvYq\nYPm8A2udYpvx1izL0uMT9QdS4w5JvBO50MdRaVkCgYEAxEpgfUG5hJ24DP5SLGaw\naqWZZbVOAxIraIhusiHZ4hcvXBtgt4lSrFmL9gPDIZI/MB7wsh6Fw2QRp4VWYKIl\n/mBt5EwsfcvRZ2EjR+ED6q3EgN4rrpwP4FCp/yA3qnhQ1Qce71eiiBln/+/wq1wk\nnLjkix/qvnv02fUz39YkL4M=\n-----END PRIVATE KEY-----\n",
-      "client_email": "gas-pos-chatbot-sa@gas-pos-chatbot.iam.gserviceaccount.com",
-      "client_id": "105399446032987539231",
-      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-      "token_uri": "https://oauth2.googleapis.com/token",
-      "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-      "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/gas-pos-chatbot-sa%40gas-pos-chatbot.iam.gserviceaccount.com",
-      "universe_domain": "googleapis.com"
-    }
-
-
-    print("Using hardcoded credentials for testing...")
-    cred_info = test_cred # 直接使用測試金鑰
+    test_cred = {"type": "service_account","project_id": "gas-pos-chatbot","private_key_id": "a861b2d9e7a666899d2f96d6457db80b09ed7c3a","private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDrb/sofoBp0CD3\nE1+a0NubPbT8JfvzaytxZZ9RodmdcA/Asr28mZpyMPRMa3W8oeKWaed+BrQIhf5R\nk3IfCGBHBoXVRzz/3A3wG7bUg/hMFgc3VhlYo2pbih+u577x9GPW20dUm0QMiGz6\nwytgAq4XBLQpths6SENasEPRXjVPbA4ib/YQjp/F1zSt9j5IRo023frGKpKVmzes\nDbprdQKPkAU+K+NDJNeElja7DYh4Rfpda/8vz1AM7Rff21wQ79jEPJws8hLu7fQA\nUvN1dPTU9tjOX84U9tom3gwNIV3ocnW+uyc6JoeDQ5IgiQ84WFoGBZkNe6hdr7no\nMht2mTh5AgMBAAECggEAA0ngDiT+31t/oQvgJZNeGelEU6hRKwmCb2tODM/FWyMI\nqUul2vz3Rg85KQRwPidcY6GiO5BVkpqSiT+qvqm5NIzFW6EK26pjzHM1UXsawa9Q\nwFJfeMLm66qT04zboy64zUm9/D3N9xyEZIKg4rlZhqtIu/NrURwCICxpn21Lh9WG\n8dWUVO+nksHazuwivf7PVP8a7ouKujtWo4hEdsQBg3UJr12tQUGWfDYELi7uuze+\nSZFAMSq2BVd/BxQ/YNii3AU5UJtzIY6be+b3Q7WIC0ofX0iTCFYxk2kym7Xw+uWC\nYh9RPaf6Z4hygCBIuS8+tDLdmS1cZ+u5LQo3d7UHIQKBgQD653XwQlvZJ9EGGnCx\nlqwZhiNvNWTWzprIatOU4LFibdSItZlKLCQ2xjxD0AG28O0h+aIXZIXe6H25Wjyc\nlrjVj7fjAVN5iiJV8BAvXrfmoCY1niUXer+hoclJyV7LcScq8h6FaP1ylx5mHz7f\nIR1d+e+3AuKJZoUd0EdYpj3fsQKBgQDwOBp8a8mHskvAOMoipRj5R4DLGSJowpQm\nxG82SeqJL+kTsKv3VCad3QsAE3KpbRz/dFj4G2NltVZyVUGWpR1L9vKsZm+e3k7t\nRdoVBeZZpX4GPErwJI7S1hqyNc9iA8Da5pw0SxM0hS5GS5kjlcJqOS79+LYuhiZp\nQzk5pD4fSQKBgAgnkau3XGjYZHDAVz1OWlWSCIDKyXY5zMoKvsmt69X5H9k5nbvN\nZ3foRXkmv4eEmRBrnpsIB1nRUJS/nAyy0VsPirh0CJSAqtEENmJzv6JdPiCr/SSg\nNq44JeSiCNSv3sgEin1nhiU9SB2lklOKLfwp7WKTU22HyXfIlykIbiZhAoGAPAGX\nxCrcvdPxDkRhYgQh1+tfpdxSdx7cCU8ahNI0Dy7zpyKD4pWXy+lynQM+qkoCa2Gx\n89BLpRWGUaswZiQ6zEYU2rIAAgyAZM8FKik+IHixoXcgNRq8vrgTFR9R/ab4XvYq\nYPm8A2udYpvx1izL0uMT9QdS4w5JvBO50MdRaVkCgYEAxEpgfUG5hJ24DP5SLGaw\naqWZZbVOAxIraIhusiHZ4hcvXBtgt4lSrFmL9gPDIZI/MB7wsh6Fw2QRp4VWYKIl\n/mBt5EwsfcvRZ2EjR+ED6q3EgN4rrpwP4FCp/yA3qnhQ1Qce71eiiBln/+/wq1wk\nnLjkix/qvnv02fUz39YkL4M=\n-----END PRIVATE KEY-----\n","client_email": "gas-pos-chatbot-sa@gas-pos-chatbot.iam.gserviceaccount.com","client_id": "105399446032987539231","auth_uri": "https://accounts.google.com/o/oauth2/auth","token_uri": "https://oauth2.googleapis.com/token","auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/gas-pos-chatbot-sa%40gas-pos-chatbot.iam.gserviceaccount.com","universe_domain": "googleapis.com"}
 
     # --- 步驟 B: 初始化基礎 API (LINE, Gemini) ---
     line_bot_api = LineBotApi(os.environ.get("LINE_BOT_CHANNEL_ACCESS_TOKEN"))
@@ -124,14 +108,14 @@ def initialize_system():
     # --- 步驟 C: 【重要】先建立 Google Sheets 與 Firestore 連線 ---
     try:
         # 先授權
-        gc = pygsheets.authorize(service_account_info=cred_info)
+        gc = pygsheets.authorize(service_account_info=test_cred)
         # 先開啟試算表，這行執行完全域變數 sheet 才有值
         sheet_url = os.environ.get("GOOGLESHEET_URL")
         sheet = gc.open_by_url(sheet_url)
         
         # 初始化 Firestore
-        creds = service_account.Credentials.from_service_account_info(cred_info)
-        db = firestore.Client(credentials=creds, project=cred_info["project_id"])
+        creds = service_account.Credentials.from_service_account_info(test_cred)
+        db = firestore.Client(credentials=creds, project=test_cred["project_id"])
         print("Successfully connected to Google Sheets and Firestore!")
     except Exception as e:
         print(f"Auth or Connection Error: {e}")
