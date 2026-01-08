@@ -574,13 +574,11 @@ def callback():
     
     signature = request.headers.get("X-Line-Signature")
     body = request.get_data(as_text=True)
-    print("Request body:", body)
+    
     
     try:
         payload = json.loads(body)
-        if payload.get("destination") != ALLOWED_DESTINATION:
-            print("Invalid destination.")
-            return "Forbidden", 403
+        print(f"Destination received: {payload.get('destination')}")
     except Exception as e:
         print("Payload parsing error:", e)
         return "Bad Request", 400
