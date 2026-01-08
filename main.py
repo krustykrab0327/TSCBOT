@@ -732,11 +732,10 @@ def handle_postback(event):
 # MAIN APPLICATION
 ###############################################################################
 
+threading.Thread(target=initialize_system).start()
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
-
-    # 建立一個背景執行緒來跑初始化，不擋住 app.run
-    threading.Thread(target=initialize_system).start()
-    
+   
     print(f"Running on port {port}")
     app.run(host="0.0.0.0", port=port)
