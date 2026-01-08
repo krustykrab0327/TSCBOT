@@ -50,13 +50,6 @@ db = None
 model_transformer = None
 ALLOWED_DESTINATION = os.environ.get("ALLOWED_DESTINATION")
 
-def get_firestore_client_from_env():
-    firestore_json = os.getenv("FIRESTORE")
-    if not firestore_json:
-        raise ValueError("FIRESTORE environment variable is not set.")
-    cred_info = json.loads(firestore_json)
-    credentials = service_account.Credentials.from_service_account_info(cred_info)
-    return firestore.Client(credentials=credentials, project=cred_info["project_id"])
 
 def get_model():
     from sentence_transformers import SentenceTransformer
