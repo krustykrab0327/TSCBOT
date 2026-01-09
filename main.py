@@ -147,7 +147,7 @@ def expand_query(query):
     
     return " ".join(expanded_words)
 
-def retrieve_top_n(query, n=2, threshold=5, high_threshold=10):
+def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
     """取得最相似的問題
     ##作法
     1.使用Sentence Transformers進行相似度計算
@@ -175,7 +175,7 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=10):
         query_embedding = model_transformer.encode([query])[0]
         semantic_scores = np.dot(question_embeddings, query_embedding)
         # 兩者加權平均（可調整權重）
-        combined_scores = 0.7 * np.array(bm25_scores) + 0.3 * semantic_scores
+        combined_scores = 0.5 * np.array(bm25_scores) + 0.5 * semantic_scores
         # 1. 篩選出超過基本閾值的結果
         above_threshold_indices = [
             i for i, score in enumerate(combined_scores) if score >= threshold
