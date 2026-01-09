@@ -131,9 +131,7 @@ def initialize_system():
     
     print("System initialization complete.")
 
-# 執行初始化 (確保在 Flask 啟動前完成)
 initialize_system()
-
 ###############################################################################
 # SEARCH AND RETRIEVAL FUNCTIONS
 ###############################################################################
