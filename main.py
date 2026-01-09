@@ -155,6 +155,8 @@ def retrieve_top_n(query, n=2, threshold=3, high_threshold=10):
     3.閥值為5，超過才列為答案
     4.最多選擇2個答案 
     """
+    global model_transformer, question_embeddings
+    
     try:
         # --- 延遲載入模型邏輯 ---
         if model_transformer is None:
