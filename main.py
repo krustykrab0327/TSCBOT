@@ -317,11 +317,17 @@ def find_closest_question_and_llm_reply(query):
         )
         
         context_chunks = []
+
+        # 遍歷搜尋到的每一個匹配物件
         for match in top_matches:
-            # 將長篇大論的答案切成小塊
-            chunks = splitter.split_text(match["answer"])
-            # 這裡可以只取前兩塊，或是全部加入，視您的資料長度而定
-            context_chunks.extend(chunks[:2])
+            # 如果答案很短，直接用全文字
+            if len(match["answer"]) < 300:
+                context_chunks.append(match["answer"])
+            else:
+                # 只有答案很長時，才進行切片，並取前 3 段
+                chunks = splitter.split_text(match["answer"])
+                context_chunks.extend(chunks[:3])
+                
         
         # 2. 將切片後的文字餵給 LLM
         result = reply_by_LLM(context_chunks, generation_model)
