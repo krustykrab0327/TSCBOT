@@ -25,6 +25,10 @@ import jieba
 # Time zone
 import pytz
 
+# 新增 LangChain 切片工具
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+import re # 用於正則表達式清理文本
+
 ###############################################################################
 # CONFIGURATION AND INITIALIZATION
 ###############################################################################
@@ -50,17 +54,33 @@ db = None
 model_transformer = None
 ALLOWED_DESTINATION = os.environ.get("ALLOWED_DESTINATION")
 
+def clean_text(text):
+    """清理解決方式中的雜訊"""
+    if not text: return ""
+    # 1. 將多個換行或空格縮減為單個空間
+    text = re.sub(r'\s+', ' ', text)
+    # 2. 統一步驟符號 
+    text = text.replace("→", ">")
+    return text.strip()
+
 
 def get_model():
     from sentence_transformers import SentenceTransformer
     return SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 
 def load_sheet_data():
-    global sheet # 關鍵：宣告使用全域的 sheet
+    global sheet 
     # Main questions
     main_ws = sheet.worksheet("title", "表單回應")
+    
     main_questions = main_ws.get_col(3, include_tailing_empty=False)
     main_answers = main_ws.get_col(4, include_tailing_empty=False)
+
+    # 對答案(解決方式)進行基礎清理
+    cleaned_answers = [clean_text(ans) for ans in main_answers]
+
+     # 對問題描述進行基礎清理
+    cleaned_questions = [clean_text(quest) for quest in main_questions]
     
     # CPC點數
     cpc_ws = sheet.worksheet("title", "中油點數")
@@ -68,7 +88,7 @@ def load_sheet_data():
     cpc_answers = cpc_ws.get_col(9, include_tailing_empty=False)
     cpc_l = cpc_ws.get_col(1, include_tailing_empty=False)
     
-    return main_questions + cpc_questions, main_answers + cpc_answers, cpc_l
+    return cleaned_questions + cpc_questions, cleaned_answers + cpc_answers, cpc_l
 
 def load_synonyms():
     global sheet
@@ -158,6 +178,10 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
     global model_transformer, question_embeddings
     
     try:
+        
+        # 0. 監控開始：記錄用戶原始輸入
+        print(f"\n[Search Monitor] --- New Query: {query} ---")
+        
         # --- 延遲載入模型邏輯 ---
         if model_transformer is None:
             print("第一次使用，正在載入 Transformer 模型...")
@@ -168,8 +192,14 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
             print("模型載入與向量計算完成！")
             
         expanded_query = expand_query(query)
-        tokenized_query = list(jieba.cut(expanded_query))
-        # BM25 排序
+
+        # 對 query 進行簡單清理 (移除搜尋不需要的符號)
+        search_query = re.sub(r'[^\w\s]', ' ', expanded_query)
+        tokenized_query = list(jieba.cut(search_query))
+
+        print(f"DEBUG - [分詞結果]: {' / '.join(tokenized_query)}")
+        
+        # --------------計算分數---------------
         bm25_scores = bm25.get_scores(tokenized_query)
         # Sentence Transformers 相似度計算(餘弦相似度)
         query_embedding = model_transformer.encode([query])[0]
@@ -193,6 +223,7 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
         ]
         
         result = []
+            
         if len(high_score_indices) >= 2:
             # 如果有兩個或以上高分結果，返回前n個
             result = [
@@ -209,6 +240,8 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
                 target=record_question_for_answer,
                 args=(questions_in_sheet[high_score_indices[0]],),
             ).start()
+
+
         else:
             # 如果沒有或只有一個高分結果，只返回最高分的一個
             i = sorted_indices[0]
@@ -274,9 +307,26 @@ def find_closest_question_and_llm_reply(query):
                 "answer": "目前找不到合適的答案，請再試一次或換個問法",
                 "top_matches": [],
             }
+
+        # --- 在這裡使用切片工具 ---
+        # 1. 初始化切片器 (也可以移到全域變數)
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=150,      # 每段最多 150 字
+            chunk_overlap=20,    # 段落間重疊 20 字確保語意不中斷
+            separators=["\n\n", "\n", "。", "！", "？", " ", ""]
+        )
         
-        answers_only = [match["answer"] for match in top_matches]
-        result = reply_by_LLM(answers_only, generation_model)
+        context_chunks = []
+        for match in top_matches:
+            # 將長篇大論的答案切成小塊
+            chunks = splitter.split_text(match["answer"])
+            # 這裡可以只取前兩塊，或是全部加入，視您的資料長度而定
+            context_chunks.extend(chunks[:2])
+        
+        # 2. 將切片後的文字餵給 LLM
+        result = reply_by_LLM(context_chunks, generation_model)
+        # -----------------------
+        
         answer_to_line = extract_chinese_results_new(result)
         return {"answer": answer_to_line, "top_matches": top_matches}
     
