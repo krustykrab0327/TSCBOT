@@ -8,6 +8,7 @@ rank-bm25
 pytz
 sentence_transformers
 jieba
+langchain
 
 #以下GCP需要
 google-cloud-firestore
