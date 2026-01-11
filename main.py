@@ -205,8 +205,10 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
         # 對 query 進行簡單清理 (移除搜尋不需要的符號)
         search_query = re.sub(r'[^\w\s]', ' ', expanded_query)
         tokenized_query = list(jieba.cut(search_query))
+        #優化斷詞，關鍵字長度必須大於1，並去除其重複性
+        filtered_query = list(set([w.strip() for w in tokenized_query if len(w.strip()) > 1]))
 
-        print(f"DEBUG - [分詞結果]: {' / '.join(tokenized_query)}")
+        print(f"DEBUG - [分詞結果]: {' / '.join(filtered_query)}")
         
         # --------------計算分數---------------
         bm25_scores = bm25.get_scores(tokenized_query)
@@ -325,11 +327,19 @@ def find_closest_question_and_llm_reply(query):
         for match in top_matches:
             # 如果答案很短，直接用全文字
             if len(match["answer"]) < 300:
+
+                print(f"使用短答案回答")
                 context_chunks.append(match["answer"])
             else:
                 # 只有答案很長時，才進行切片，並取前 3 段
                 chunks = simple_text_splitter(match["answer"])
-                context_chunks.extend(chunks[:3])
+                # 只取前 3 段
+                target_chunks = chunks[:3]
+                
+                for j, chunk in enumerate(target_chunks):
+                    # 這裡就是觀察「切好的句子」的地方
+                    print(f"Chunk {j+1}: {chunk}")
+                context_chunks.extend(target_chunks)
                 
         
         # 2. 將切片後的文字餵給 LLM
