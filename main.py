@@ -54,6 +54,22 @@ db = None
 model_transformer = None
 ALLOWED_DESTINATION = os.environ.get("ALLOWED_DESTINATION")
 
+def init_jieba_custom_dict():
+    # 1. 定義加油站專用術語 (強烈建議持續補充)
+    gas_station_terms = [
+        "尿素卡", "捷利卡", "中油卡", "車隊卡", "公務卡", 
+        "一島", "二島", "前台", "後台", "3S", "POS", "尿素水", "國光牌", 
+        "油槽", "油槍", "讀卡機", "刷卡機", "發票機", "小烏龜",
+        "洗車機", "感應卡", "刷卡機", "班日報", "積慧", "月結", "日結"
+        "台塑網", "累積數", "液面計", "量油器", "加油機", "伺服器", "大宗客戶"
+    ]
+    
+    # 2. 強制加入詞庫
+    for term in gas_station_terms:
+        jieba.add_word(term)
+    
+    print(f"DEBUG - [Jieba] 成功匯入 {len(gas_station_terms)} 個加油站專用詞彙")
+
 def clean_text(text):
     """清理解決方式中的雜訊"""
     if not text: return ""
@@ -157,6 +173,7 @@ def initialize_system():
 
     # 加入這行強制載入 jieba 字典，避免第一次搜尋卡住
     jieba.lcut("初始化")
+    init_jieba_custom_dict()
     
     print("System initialization complete.")
 
