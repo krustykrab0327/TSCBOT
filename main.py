@@ -25,6 +25,9 @@ import jieba
 # Time zone
 import pytz
 
+#regular expression
+import re
+
 
 ###############################################################################
 # CONFIGURATION AND INITIALIZATION
