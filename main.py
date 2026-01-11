@@ -25,9 +25,6 @@ import jieba
 # Time zone
 import pytz
 
-# 新增 LangChain 切片工具
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-import re # 用於正則表達式清理文本
 
 ###############################################################################
 # CONFIGURATION AND INITIALIZATION
@@ -62,6 +59,15 @@ def clean_text(text):
     # 2. 統一步驟符號 
     text = text.replace("→", ">")
     return text.strip()
+
+
+def simple_text_splitter(text, chunk_size=150, chunk_overlap=30):
+    if not text: return []
+    if len(text) <= chunk_size: return [text]
+    chunks = []
+    for i in range(0, len(text), chunk_size - chunk_overlap):
+        chunks.append(text[i:i + chunk_size])
+    return chunks
 
 
 def get_model():
@@ -309,12 +315,6 @@ def find_closest_question_and_llm_reply(query):
             }
 
         # --- 在這裡使用切片工具 ---
-        # 1. 初始化切片器 (也可以移到全域變數)
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=150,      # 每段最多 150 字
-            chunk_overlap=20,    # 段落間重疊 20 字確保語意不中斷
-            separators=["\n\n", "\n", "。", "！", "？", " ", ""]
-        )
         
         context_chunks = []
 
@@ -325,7 +325,7 @@ def find_closest_question_and_llm_reply(query):
                 context_chunks.append(match["answer"])
             else:
                 # 只有答案很長時，才進行切片，並取前 3 段
-                chunks = splitter.split_text(match["answer"])
+                chunks = simple_text_splitter(match["answer"])
                 context_chunks.extend(chunks[:3])
                 
         
