@@ -8,9 +8,7 @@ rank-bm25
 pytz
 sentence_transformers
 jieba
-langchain
-langchain-community
-langchain-text-splitters
+
 
 #以下GCP需要
 google-cloud-firestore
