@@ -19,6 +19,7 @@ from google.oauth2 import service_account
 
 # ML and NLP imports
 import numpy as np
+import pandas as pd
 from rank_bm25 import BM25Okapi
 import jieba
 
@@ -186,8 +187,9 @@ def initialize_system():
     #question_embeddings = model_transformer.encode(questions_in_sheet)
 
     # 加入這行強制載入 jieba 字典，避免第一次搜尋卡住
+    init_jieba_custom_dict(sheet)
     jieba.lcut("初始化")
-    init_jieba_custom_dict()
+    
     
     print("System initialization complete.")
 
@@ -829,6 +831,9 @@ def handle_postback(event):
             "feedback_type": feedback_type,
             "timestamp": firestore.SERVER_TIMESTAMP
         })
+
+        # 更新原始對話紀錄
+        docs[0].reference.update({"feedback": feedback_type})
     
     line_bot_api.reply_message(
         event.reply_token, TextSendMessage(text="感謝您的回饋 🙏")
