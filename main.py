@@ -568,7 +568,9 @@ def create_category_and_common_features():
     )
 
 def create_flex_message(title, items, item_type="category", start_index=1):
-    """生成Flex Message以顯示搜尋結果或分類選項"""
+    """生成Flex Message以顯示搜尋結果或分類選項
+       取小於等於14字問題就好，flex_response太多張
+    """
     bubbles = []
 
     # 如果是問題模式，先過濾出長度符合條件的項目
