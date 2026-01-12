@@ -570,12 +570,19 @@ def create_category_and_common_features():
 def create_flex_message(title, items, item_type="category", start_index=1):
     """生成Flex Message以顯示搜尋結果或分類選項"""
     bubbles = []
-    for i in range(0, len(items), 10):
+
+    # 如果是問題模式，先過濾出長度符合條件的項目
+    if item_type == "question":
+        valid_items = [item for item in items if len(item.get('問題描述', '')) <= 14]
+    else:
+        valid_items = items
+        
+    for i in range(0, len(valid_items), 10):
         bubble_contents = [
             TextComponent(text=title, weight="bold", size="xl", margin="md")
         ]
         
-        for idx, item in enumerate(items[i : i + 10], start=start_index):
+        for idx, item in enumerate(valid_items[i : i + 10], start=start_index):
             label_text = (
                 f"{idx}. {item['問題描述'] if item_type == 'question' else item}"
             )
