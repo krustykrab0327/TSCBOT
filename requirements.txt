@@ -4,6 +4,7 @@ line-bot-sdk
 google-generativeai
 pygsheets
 numpy
+pandas
 rank-bm25
 pytz
 sentence_transformers
