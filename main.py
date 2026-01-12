@@ -104,10 +104,6 @@ def simple_text_splitter(text, chunk_size=150, chunk_overlap=30):
     return chunks
 
 
-def get_model():
-    from sentence_transformers import SentenceTransformer
-    return SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-
 def load_sheet_data():
     global sheet 
     # Main questions
