@@ -56,8 +56,7 @@ ALLOWED_DESTINATION = os.environ.get("ALLOWED_DESTINATION")
 
 def init_jieba_custom_dict(sheet_obj):
     """
-    從 Google Sheets 讀取專有名詞。
-    請在試算表建立「專用詞庫」分頁，第一列為標題(term)，下方填寫詞彙。
+    從 Google Sheets 讀取專用詞庫
     """
     try:
         # 取得「專用詞庫」分頁
