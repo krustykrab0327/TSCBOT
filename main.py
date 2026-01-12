@@ -54,21 +54,36 @@ db = None
 model_transformer = None
 ALLOWED_DESTINATION = os.environ.get("ALLOWED_DESTINATION")
 
-def init_jieba_custom_dict():
-    # 1. 定義加油站專用術語 (強烈建議持續補充)
-    gas_station_terms = [
-        "尿素卡", "捷利卡", "中油卡", "車隊卡", "公務卡", 
-        "一島", "二島", "前台", "後台", "3S", "POS", "尿素水", "國光牌", 
-        "油槽", "油槍", "讀卡機", "刷卡機", "發票機", "小烏龜",
-        "洗車機", "感應卡", "刷卡機", "班日報", "積慧", "月結", "日結"
-        "台塑網", "累積數", "液面計", "量油器", "加油機", "伺服器", "大宗客戶"
-    ]
-    
-    # 2. 強制加入詞庫
-    for term in gas_station_terms:
-        jieba.add_word(term)
-    
-    print(f"DEBUG - [Jieba] 成功匯入 {len(gas_station_terms)} 個加油站專用詞彙")
+def init_jieba_custom_dict(sheet_obj):
+    """
+    從 Google Sheets 讀取專有名詞。
+    請在試算表建立「專用詞庫」分頁，第一列為標題(term)，下方填寫詞彙。
+    """
+    try:
+        # 取得「專用詞庫」分頁
+        term_ws = sheet_obj.worksheet_by_title("專用詞庫")
+        term_data = term_ws.get_all_records()
+        
+        if not term_data:
+            print("DEBUG-Jieba詞庫分頁無資料")
+            return
+
+        df_terms = pd.DataFrame(term_data)
+        # 取得第一欄的名稱
+        column_name = df_terms.columns[0]
+        # 清理資料：轉字串、去空值、轉清單
+        custom_terms = df_terms[column_name].dropna().astype(str).tolist()
+        
+        count = 0
+        for term in custom_terms:
+            word = term.strip()
+            if word:
+                jieba.add_word(word)
+                count += 1
+        
+        print(f"DEBUG-Jieba成功匯入詞彙共 {count} 筆")
+    except Exception as e:
+        print(f"DEBUG-Jieba載入詞庫失敗: {e}")
 
 def clean_text(text):
     """清理解決方式中的雜訊"""
@@ -800,13 +815,21 @@ def handle_postback(event):
     feedback_type = params.get("feedback")
     conversation_id = params.get("conv_id")
     user_id = event.source.user_id
-    
-    db.collection("feedback").add({
-        "user_id": user_id,
-        "conversation_id": conversation_id,
-        "feedback_type": feedback_type,
-        "timestamp": firestore.SERVER_TIMESTAMP
-    })
+
+    # 到 Firestore 的 conversations 集合尋找當初那筆對話
+    # 我們需要這筆紀錄裡面的 "question" 和 "answer"
+    docs = db.collection("conversations").where("conversation_id", "==", conversation_id).limit(1).get()
+
+    if docs:
+        conv_data = docs[0].to_dict()
+        db.collection("feedback").add({
+            "user_id": user_id,
+            "conversation_id": conversation_id,
+            "question": conv_data.get("question"), # 直接存入問題
+            "answer": conv_data.get("answer"),     # 直接存入答案
+            "feedback_type": feedback_type,
+            "timestamp": firestore.SERVER_TIMESTAMP
+        })
     
     line_bot_api.reply_message(
         event.reply_token, TextSendMessage(text="感謝您的回饋 🙏")
