@@ -563,14 +563,14 @@ def create_category_and_common_features():
         contents=CarouselContainer(contents=[category_bubble]),
     )
 
-def create_flex_message(title, items, item_type="category", start_index=1):
+def create_flex_message(title, items, item_type="category", start_index=1, filter_length=False):
     """生成Flex Message以顯示搜尋結果或分類選項
        取小於等於14字問題就好，flex_response太多張
     """
     bubbles = []
 
     # 如果是問題模式，先過濾出長度符合條件的項目
-    if item_type == "question":
+    if item_type == "question" and filter_length:
         valid_items = [item for item in items if len(item.get('問題描述', '')) <= 14]
     else:
         valid_items = items
@@ -720,7 +720,7 @@ def handle_message(event):
         
         if questions:
             print(f"Found {len(questions)} questions for category '{category}'")
-            reply = create_flex_message(f"{category} - 問題列表", questions, "question")
+            reply = create_flex_message(f"{category} - 問題列表", questions, "question",, filter_length=True)
         else:
             print(f"No questions found for category '{category}'")
             reply = TextSendMessage(
@@ -766,7 +766,7 @@ def handle_message(event):
     elif user_input == "熱門查詢":
         top_questions = get_top_questions()
         if top_questions:
-            reply = create_flex_message("熱門查詢 - Top 5 問題", top_questions, "question")
+            reply = create_flex_message("熱門查詢 - Top 5 問題", top_questions, "question", filter_length=False)
         else:
             reply = TextSendMessage(text="目前沒有熱門排行記錄。")
         print("Displayed top 5 questions.")
