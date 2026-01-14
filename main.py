@@ -4,7 +4,7 @@ import time
 import threading
 from datetime import datetime
 
-# Flask and LINE Bot imports
+# Flask and LINE Bot import
 from flask import Flask, abort, request
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
