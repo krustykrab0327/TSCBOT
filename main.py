@@ -633,35 +633,7 @@ def create_flex_message(title, items, item_type="category", start_index=1, filte
     )
 
 def build_flex_response(answer, conversation_id):
-    """
-    建立包含可點擊連結與回饋按鈕的 Flex 回覆
-    """
-    # 1. 偵測網址的正則表達式
-    url_pattern = r'(https?://[^\s]+)'
-    
-    # 2. 將文字拆分為普通文字與網址
-    parts = re.split(url_pattern, answer)
-    spans = []
-    
-    for part in parts:
-        if re.match(url_pattern, part):
-            # 如果是網址，建立一個帶有 URI 動作的藍色底線文字
-            spans.append({
-                "type": "span",
-                "text": part,
-                "color": "#1e90ff",
-                "decoration": "underline",
-                "action": {
-                    "type": "uri",
-                    "uri": part
-                }
-            })
-        else:
-            # 如果是普通文字
-            spans.append({
-                "type": "span",
-                "text": part
-            })
+    """建立包含回饋按鈕的Flex回覆"""
     return FlexSendMessage(
         alt_text="回覆與回饋",
         contents={
@@ -670,7 +642,7 @@ def build_flex_response(answer, conversation_id):
                 "type": "box",
                 "layout": "vertical",
                 "contents": [
-                    {"type": "text", "text": " ", "wrap": True, "contents": spans},
+                    {"type": "text", "text": answer, "wrap": True},
                     {
                         "type": "box",
                         "layout": "horizontal",
