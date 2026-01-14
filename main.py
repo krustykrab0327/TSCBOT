@@ -228,6 +228,9 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
             # 載入後立刻對現有問題進行編碼
             question_embeddings = model_transformer.encode(questions_in_sheet)
             print("模型載入與向量計算完成！")
+
+        # 定義停用詞
+        stop_words = {"如何", "處理", "請問", "的", "了", "謝謝", "你好", "怎麼"}
             
         expanded_query = expand_query(query)
 
@@ -235,12 +238,12 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
         search_query = re.sub(r'[^\w\s]', ' ', expanded_query)
         tokenized_query = list(jieba.cut(search_query))
         #優化斷詞，關鍵字長度必須大於1，並去除其重複性
-        filtered_query = list(set([w.strip() for w in tokenized_query if len(w.strip()) > 1]))
+        filtered_query = [w.strip() for w in tokenized_query if w.strip() not in stop_words and len(w.strip()) > 1]
 
         print(f"DEBUG - [分詞結果]: {' / '.join(filtered_query)}")
         
         # --------------計算分數---------------
-        bm25_scores = bm25.get_scores(tokenized_query)
+        bm25_scores = bm25.get_scores(filtered_query)
         # Sentence Transformers 相似度計算(餘弦相似度)
         query_embedding = model_transformer.encode([query])[0]
         semantic_scores = np.dot(question_embeddings, query_embedding)
