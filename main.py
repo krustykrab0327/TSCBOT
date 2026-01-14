@@ -511,7 +511,7 @@ def record_question(user_id, user_input):
 
 def record_question_for_answer(question_for_answer):
     """記錄回答問題到回答工作表"""
-    global sheet # 修正點：直接使用全域 sheet，不要重新 authorize
+    global sheet 
     if sheet is None:
         print("Sheet not initialized yet. Skipping record.")
         return
