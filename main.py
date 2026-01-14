@@ -720,7 +720,7 @@ def handle_message(event):
         
         if questions:
             print(f"Found {len(questions)} questions for category '{category}'")
-            reply = create_flex_message(f"{category} - 問題列表", questions, "question",, filter_length=True)
+            reply = create_flex_message(f"{category} - 問題列表", questions, "question", filter_length=True)
         else:
             print(f"No questions found for category '{category}'")
             reply = TextSendMessage(
