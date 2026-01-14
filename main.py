@@ -311,7 +311,7 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
 def reply_by_LLM(finalanswer, model):
     """使用LLM生成自然語言回覆"""
     try:
-        prompt = f"""你是知識問答客服，請將{ finalanswer }直接轉成自然語言。
+        prompt = f"""你是專業的加油站知識問答客服，請將{ finalanswer }直接轉成自然語言。
         ##條件
         1.口氣禮貌親切簡潔，像是和使用者對話
         2.若finalanswer為空[]，則回覆:此問題目前找不到合適解答，請聯絡積慧幫忙協助
