@@ -96,12 +96,29 @@ def clean_text(text):
 
 
 def simple_text_splitter(text, chunk_size=150, chunk_overlap=30):
-    if not text: return []
-    if len(text) <= chunk_size: return [text]
+    
+    if not text: return [], []
+    # --- 1. 先用 Regex 提取網址並移除 ---
+    url_pattern = r'https?://[a-zA-Z0-9\.\/\-\_\?\&\=\#\%]+'
+    urls = re.findall(url_pattern, text)
+    
+    
+    
+    # 【新增測試點】確認 Regex 抓到了什麼
+    print(f"--- [DEBUG Splitter] ---")
+    print(f"提取出的網址清單: {urls}")
+    
+    clean_text_content = re.sub(url_pattern, '', text).strip()
+    
+    # --- 2. 針對「沒網址的純文字」進行切片 ---
+    if len(clean_text_content) <= chunk_size:
+        return [clean_text_content], urls
+        
     chunks = []
-    for i in range(0, len(text), chunk_size - chunk_overlap):
-        chunks.append(text[i:i + chunk_size])
-    return chunks
+    for i in range(0, len(clean_text_content), chunk_size - chunk_overlap):
+        chunks.append(clean_text_content[i:i + chunk_size])
+    
+    return chunks, urls
 
 
 def load_sheet_data():
@@ -176,11 +193,14 @@ def initialize_system():
 
     # --- 步驟 E: 訓練/準備 ML 模型 ---
     # 建議把 get_model() 放在這裡載入一次就好，不要在 retrieve_top_n 裡重複載入
-    #from sentence_transformers import SentenceTransformer
-    #model_transformer = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+    if model_transformer is None:
+            print("第一次使用，正在載入 Transformer 模型...")
+            from sentence_transformers import SentenceTransformer
+            model_transformer = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+
     
     bm25 = BM25Okapi([list(jieba.cut(q)) for q in questions_in_sheet])
-    #question_embeddings = model_transformer.encode(questions_in_sheet)
+    question_embeddings = model_transformer.encode(questions_in_sheet)
 
     # 加入這行強制載入 jieba 字典，避免第一次搜尋卡住
     init_jieba_custom_dict(sheet)
@@ -220,14 +240,6 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
         # 0. 監控開始：記錄用戶原始輸入
         print(f"\n[Search Monitor] --- New Query: {query} ---")
         
-        # --- 延遲載入模型邏輯 ---
-        if model_transformer is None:
-            print("第一次使用，正在載入 Transformer 模型...")
-            from sentence_transformers import SentenceTransformer
-            model_transformer = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-            # 載入後立刻對現有問題進行編碼
-            question_embeddings = model_transformer.encode(questions_in_sheet)
-            print("模型載入與向量計算完成！")
 
         # 定義停用詞
         stop_words = {"如何", "處理", "請問", "的", "了", "謝謝", "你好", "怎麼"}
@@ -349,22 +361,27 @@ def find_closest_question_and_llm_reply(query):
             return {
                 "answer": "目前找不到合適的答案，請再試一次或換個問法",
                 "top_matches": [],
+                "urls": [],
             }
 
         # --- 在這裡使用切片工具 ---
         
         context_chunks = []
+        all_found_urls = []
 
         # 遍歷搜尋到的每一個匹配物件
         for match in top_matches:
+
+            # 統一過一次 splitter 來提取網址
+            chunks, urls = simple_text_splitter(match["answer"])
+            all_found_urls.extend(urls)
             # 如果答案很短，直接用全文字
             if len(match["answer"]) < 300:
 
                 print(f"使用短答案回答")
                 context_chunks.append(match["answer"])
             else:
-                # 只有答案很長時，才進行切片，並取前 3 段
-                chunks = simple_text_splitter(match["answer"])
+
                 # 只取前 3 段
                 target_chunks = chunks[:3]
                 
@@ -372,6 +389,13 @@ def find_closest_question_and_llm_reply(query):
                     # 這裡就是觀察「切好的句子」的地方
                     print(f"Chunk {j+1}: {chunk}")
                 context_chunks.extend(target_chunks)
+
+        # 【新增測試點】彙整後的去重網址
+        final_urls = list(set(all_found_urls))
+        print(f"--- [DEBUG Final Response] ---")
+        print(f"用戶查詢: {query}")
+        print(f"最終決定顯示的網址數量: {len(final_urls)}")
+        print(f"網址內容: {final_urls}")
                 
         
         # 2. 將切片後的文字餵給 LLM
@@ -379,13 +403,17 @@ def find_closest_question_and_llm_reply(query):
         # -----------------------
         
         answer_to_line = extract_chinese_results_new(result)
-        return {"answer": answer_to_line, "top_matches": top_matches}
+        return {"answer": answer_to_line, 
+                "top_matches": top_matches,
+                "urls": final_urls, # 去除重複網址
+               }
     
     except Exception as e:
         print(f"Error in find_closest_question_and_llm_reply: {str(e)}")
         return {
             "answer": "此問題目前找不到合適解答，請聯絡積慧幫忙協助",
             "top_matches": [],
+            "urls": [], # 去除重複網址
         }
 
 ###############################################################################
@@ -632,47 +660,65 @@ def create_flex_message(title, items, item_type="category", start_index=1, filte
         else TextSendMessage(text="找不到符合條件的資料。")
     )
 
-def build_flex_response(answer, conversation_id):
-    """建立包含回饋按鈕的Flex回覆"""
+def build_flex_response(answer, conversation_id, urls=[]):
+    """建立包含回饋按鈕與 URL 連結按鈕的 Flex"""
+    
+    # 【新增測試點】確認 UI 接收到的網址
+    print(f"--- [DEBUG Flex UI] ---")
+    print(f"UI 接收到的網址長度: {len(urls)}")
+    
+    # 基礎內容：AI 的回答文字
+    contents = [
+        {"type": "text", "text": answer, "wrap": True, "size": "md"}
+    ]
+
+    # --- 新增：如果有網址，加入連結按鈕 ---
+    if urls:
+        contents.append({"type": "separator", "margin": "lg"})
+        for i, url in enumerate(urls):
+            contents.append({
+                "type": "button",
+                "action": {
+                    "type": "uri",
+                    "label": f"🔗 點此查看連結 {i+1 if len(urls)>1 else ''}",
+                    "uri": url
+                },
+                "style": "primary",
+                "color": "#1DB446",
+                "margin": "sm",
+                "height": "sm"
+            })
+
+    # 原有的評分按鈕 (👍/👎)
+    feedback_box = {
+        "type": "box",
+        "layout": "horizontal",
+        "margin": "md",
+        "contents": [
+            {
+                "type": "button",
+                "action": {"type": "postback", "label": "👍", "data": f"feedback=thumbs_up&conv_id={conversation_id}"},
+                "flex": 1
+            },
+            {
+                "type": "button",
+                "action": {"type": "postback", "label": "👎", "data": f"feedback=thumbs_down&conv_id={conversation_id}"},
+                "flex": 1
+            }
+        ]
+    }
+    contents.append(feedback_box)
+
     return FlexSendMessage(
-        alt_text="回覆與回饋",
+        alt_text="您有一則新回覆",
         contents={
             "type": "bubble",
             "body": {
                 "type": "box",
                 "layout": "vertical",
-                "contents": [
-                    {"type": "text", "text": answer, "wrap": True},
-                    {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "margin": "md",
-                        "contents": [
-                            {
-                                "type": "button",
-                                "action": {
-                                    "type": "postback",
-                                    "label": "👍",
-                                    "data": f"feedback=thumbs_up&conv_id={conversation_id}",
-                                },
-                                "height": "sm",
-                                "flex": 1,
-                            },
-                            {
-                                "type": "button",
-                                "action": {
-                                    "type": "postback",
-                                    "label": "👎",
-                                    "data": f"feedback=thumbs_down&conv_id={conversation_id}",
-                                },
-                                "height": "sm",
-                                "flex": 1,
-                            },
-                        ],
-                    },
-                ],
-            },
-        },
+                "contents": contents
+            }
+        }
     )
 
 ###############################################################################
@@ -854,4 +900,4 @@ def handle_postback(event):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     print(f"Running on port {port}")
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
