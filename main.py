@@ -829,7 +829,7 @@ def handle_message(event):
         try:
             result_bundle = find_closest_question_and_llm_reply(user_input)
             conversation_id = f"conv_{user_id}_{int(time.time())}"
-            reply = build_flex_response(result_bundle["answer"], conversation_id)
+            reply = build_flex_response(result_bundle["answer"], conversation_id,urls=result_bundle.get("urls", []))
             print(f"Show LLM answer for question: {user_input}")
             
             if result_bundle["top_matches"]:
