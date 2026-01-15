@@ -103,9 +103,6 @@ def simple_text_splitter(text, chunk_size=150, chunk_overlap=30):
     urls = re.findall(url_pattern, text)
     
     
-    
-    # 【新增測試點】確認 Regex 抓到了什麼
-    print(f"--- [DEBUG Splitter] ---")
     print(f"提取出的網址清單: {urls}")
     
     clean_text_content = re.sub(url_pattern, '', text).strip()
@@ -192,7 +189,6 @@ def initialize_system():
     synonym_dict = load_synonyms()
 
     # --- 步驟 E: 訓練/準備 ML 模型 ---
-    # 建議把 get_model() 放在這裡載入一次就好，不要在 retrieve_top_n 裡重複載入
     if model_transformer is None:
             print("第一次使用，正在載入 Transformer 模型...")
             from sentence_transformers import SentenceTransformer
@@ -202,8 +198,9 @@ def initialize_system():
     bm25 = BM25Okapi([list(jieba.cut(q)) for q in questions_in_sheet])
     question_embeddings = model_transformer.encode(questions_in_sheet)
 
-    # 加入這行強制載入 jieba 字典，避免第一次搜尋卡住
+    
     init_jieba_custom_dict(sheet)
+    # 加入這行強制載入 jieba 字典，避免第一次搜尋卡住
     jieba.lcut("初始化")
     
     
@@ -237,7 +234,7 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
     
     try:
         
-        # 0. 監控開始：記錄用戶原始輸入
+        # 記錄用戶原始輸入
         print(f"\n[Search Monitor] --- New Query: {query} ---")
         
 
@@ -252,7 +249,7 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
         #優化斷詞，關鍵字長度必須大於1，並去除其重複性
         filtered_query = [w.strip() for w in tokenized_query if w.strip() not in stop_words and len(w.strip()) > 1]
 
-        print(f"DEBUG - [分詞結果]: {' / '.join(filtered_query)}")
+        print(f"[分詞結果]: {' / '.join(filtered_query)}")
         
         # --------------計算分數---------------
         bm25_scores = bm25.get_scores(filtered_query)
@@ -280,7 +277,7 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
         result = []
             
         if len(high_score_indices) >= 2:
-            # 如果有兩個或以上高分結果，返回前n個
+            # 必須要「有兩個以上」超過 12 分，才會回傳前 n 個
             result = [
                 {
                     "question": questions_in_sheet[i],
@@ -298,7 +295,7 @@ def retrieve_top_n(query, n=2, threshold=5, high_threshold=12):
 
 
         else:
-            # 如果沒有或只有一個高分結果，只返回最高分的一個
+            # 否則（包含只有一個高分，或大家都介於 5~12 分），只回傳最高分的一個
             i = sorted_indices[0]
             result = [
                 {
@@ -390,9 +387,8 @@ def find_closest_question_and_llm_reply(query):
                     print(f"Chunk {j+1}: {chunk}")
                 context_chunks.extend(target_chunks)
 
-        # 【新增測試點】彙整後的去重網址
+        # 彙整後的去重網址
         final_urls = list(set(all_found_urls))
-        print(f"--- [DEBUG Final Response] ---")
         print(f"用戶查詢: {query}")
         print(f"最終決定顯示的網址數量: {len(final_urls)}")
         print(f"網址內容: {final_urls}")
@@ -663,8 +659,7 @@ def create_flex_message(title, items, item_type="category", start_index=1, filte
 def build_flex_response(answer, conversation_id, urls=[]):
     """建立包含回饋按鈕與 URL 連結按鈕的 Flex"""
     
-    # 【新增測試點】確認 UI 接收到的網址
-    print(f"--- [DEBUG Flex UI] ---")
+    # 確認 UI 接收到的網址
     print(f"UI 接收到的網址長度: {len(urls)}")
     
     # 基礎內容：AI 的回答文字
