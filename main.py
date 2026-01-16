@@ -876,6 +876,7 @@ def handle_postback(event):
             "user_id": user_id,
             "conversation_id": conversation_id,
             "question": conv_data.get("question"), # 直接存入問題
+            "matched_question": conv_data.get("matched_question"), #google sheet 對應問題
             "answer": conv_data.get("answer"),     # 直接存入答案
             "feedback_type": feedback_type,
             "timestamp": firestore.SERVER_TIMESTAMP
